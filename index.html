@@ -147,7 +147,7 @@
           set(value) {
             if (this.id === 'legendTable' && typeof value === 'string' && value.length > 60000 && value.includes('legend-row')) {
               const saved = value;
-              const done = (saved.match(/완료/g) || []).length;
+              const done = document.querySelector('#stitchCount')?.textContent || '0';
               descriptor.set.call(this, `<div class="legend-summary"><div><b>색상표 1024칸</b><span>${done}칸 작업 완료. 전체 표는 필요할 때만 불러옵니다.</span></div><button class="legend-open" type="button">전체 표 열기</button></div>`);
               queueMicrotask(() => {
                 const button = this.querySelector('.legend-open');
