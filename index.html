@@ -124,6 +124,27 @@
     <script src="./app.js"></script>
     <script>
       (() => {
+        const photoInput = document.querySelector('#photoInput');
+        const originalPhotoChange = photoInput?.onchange;
+        let uploadBusy = false;
+        if (photoInput && originalPhotoChange) {
+          photoInput.onchange = async event => {
+            if (uploadBusy) return;
+            uploadBusy = true;
+            photoInput.disabled = true;
+            try {
+              await originalPhotoChange.call(photoInput, event);
+            } finally {
+              uploadBusy = false;
+              photoInput.disabled = false;
+              photoInput.value = '';
+            }
+          };
+        }
+      })();
+    </script>
+    <script>
+      (() => {
         const installPanel = document.querySelector('#installPanel');
         const installButton = document.querySelector('#installButton');
         const navInstallButton = document.querySelector('#navInstallButton');
