@@ -6,6 +6,10 @@ const { DatabaseSync } = require("node:sqlite");
 const root = __dirname;
 const dataDir = join(root, "data");
 const port = Number(process.env.PORT || 4173);
+const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseBucket = process.env.SUPABASE_BUCKET || "pyeongtaek-stitch";
+const useSupabase = Boolean(supabaseUrl && supabaseKey);
 
 if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
 
@@ -43,6 +47,173 @@ function sendJson(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+function storagePath(kind, cell) {
+  return `${kind}/${cell.patternId}/${cell.row}-${cell.col}${kind === "photos" ? ".jpg" : ".json"}`;
+}
+
+function dataUrlToBuffer(dataUrl) {
+  const match = /^data:(.+?);base64,(.+)$/.exec(dataUrl || "");
+  if (!match) return null;
+  return { contentType: match[1], buffer: Buffer.from(match[2], "base64") };
+}
+
+function bufferToDataUrl(buffer, contentType) {
+  return `data:${contentType || "image/jpeg"};base64,${Buffer.from(buffer).toString("base64")}`;
+}
+
+async function supabaseRequest(path, options = {}) {
+  const response = await fetch(`${supabaseUrl}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase ${response.status}: ${text}`);
+  }
+  if (response.status === 204) return null;
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) return response.json();
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function ensureSupabaseBucket() {
+  if (!useSupabase) return;
+  try {
+    await supabaseRequest(`/storage/v1/bucket/${encodeURIComponent(supabaseBucket)}`);
+  } catch {
+    await supabaseRequest("/storage/v1/bucket", {
+      method: "POST",
+      body: JSON.stringify({ id: supabaseBucket, name: supabaseBucket, public: false })
+    });
+  }
+}
+
+async function uploadSupabaseObject(path, body, contentType) {
+  await supabaseRequest(`/storage/v1/object/${encodeURIComponent(supabaseBucket)}/${path}`, {
+    method: "POST",
+    body,
+    headers: {
+      "Content-Type": contentType,
+      "x-upsert": "true"
+    }
+  });
+}
+
+async function deleteSupabaseObjects(paths) {
+  await supabaseRequest(`/storage/v1/object/${encodeURIComponent(supabaseBucket)}`, {
+    method: "DELETE",
+    body: JSON.stringify({ prefixes: paths })
+  });
+}
+
+async function listSupabaseObjects(prefix) {
+  return supabaseRequest(`/storage/v1/object/list/${encodeURIComponent(supabaseBucket)}`, {
+    method: "POST",
+    body: JSON.stringify({ prefix, limit: 1000, offset: 0, sortBy: { column: "name", order: "asc" } })
+  });
+}
+
+async function downloadSupabaseObject(path) {
+  const response = await fetch(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(supabaseBucket)}/${path}`, {
+    headers: { Authorization: `Bearer ${supabaseKey}` }
+  });
+  if (!response.ok) throw new Error(`Supabase download ${response.status}`);
+  return {
+    contentType: response.headers.get("content-type") || "application/octet-stream",
+    buffer: Buffer.from(await response.arrayBuffer())
+  };
+}
+
+async function saveCellSupabase(cell, updatedAt) {
+  await ensureSupabaseBucket();
+  const photo = dataUrlToBuffer(cell.dataUrl);
+  const record = {
+    key: cell.key,
+    patternId: cell.patternId,
+    row: cell.row,
+    col: cell.col,
+    thread: cell.thread,
+    symbol: cell.symbol,
+    color: cell.color || null,
+    hex: cell.hex || null,
+    stitched: Boolean(cell.stitched),
+    updatedAt,
+    photoPath: photo ? storagePath("photos", cell) : null
+  };
+  if (photo) await uploadSupabaseObject(record.photoPath, photo.buffer, photo.contentType);
+  await uploadSupabaseObject(storagePath("cells", cell), JSON.stringify(record), "application/json; charset=utf-8");
+}
+
+async function loadPatternSupabase(patternId) {
+  await ensureSupabaseBucket();
+  const objects = await listSupabaseObjects(`cells/${patternId}`);
+  const cells = [];
+  for (const item of objects || []) {
+    if (!item.name.endsWith(".json")) continue;
+    const metaPath = `cells/${patternId}/${item.name}`;
+    const metaFile = await downloadSupabaseObject(metaPath);
+    const cell = JSON.parse(metaFile.buffer.toString("utf8"));
+    if (cell.photoPath) {
+      try {
+        const photo = await downloadSupabaseObject(cell.photoPath);
+        cell.dataUrl = bufferToDataUrl(photo.buffer, photo.contentType);
+      } catch {
+        cell.dataUrl = null;
+      }
+    } else {
+      cell.dataUrl = null;
+    }
+    cells.push(cell);
+  }
+  return cells.sort((a, b) => (a.row - b.row) || (a.col - b.col));
+}
+
+async function countsSupabase() {
+  await ensureSupabaseBucket();
+  const counts = [];
+  for (const patternId of ["agri", "baedari", "sopung", "oseong", "wonpyeong", "jinwi", "port", "lake"]) {
+    const objects = await listSupabaseObjects(`photos/${patternId}`);
+    counts.push({ patternId, count: (objects || []).filter((item) => item.name.endsWith(".jpg")).length });
+  }
+  return counts;
+}
+
+async function patchCellSupabase(key, body, updatedAt) {
+  await ensureSupabaseBucket();
+  const cell = { ...body, key, updatedAt };
+  try {
+    const metaFile = await downloadSupabaseObject(storagePath("cells", cell));
+    Object.assign(cell, JSON.parse(metaFile.buffer.toString("utf8")), body, { key, updatedAt });
+  } catch {
+    // A stitched-only cell can exist before a photo is uploaded.
+  }
+  await uploadSupabaseObject(storagePath("cells", cell), JSON.stringify(cell), "application/json; charset=utf-8");
+}
+
+async function deleteCellSupabase(cell) {
+  await ensureSupabaseBucket();
+  await deleteSupabaseObjects([storagePath("cells", cell), storagePath("photos", cell)]);
+}
+
+async function resetSupabase() {
+  await ensureSupabaseBucket();
+  const paths = [];
+  for (const rootPrefix of ["cells", "photos"]) {
+    for (const patternId of ["agri", "baedari", "sopung", "oseong", "wonpyeong", "jinwi", "port", "lake"]) {
+      const objects = await listSupabaseObjects(`${rootPrefix}/${patternId}`);
+      (objects || []).forEach((item) => paths.push(`${rootPrefix}/${patternId}/${item.name}`));
+    }
+  }
+  if (!paths.length) return;
+  for (let index = 0; index < paths.length; index += 100) {
+    await deleteSupabaseObjects(paths.slice(index, index + 100));
+  }
+}
+
 function readJson(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -74,11 +245,15 @@ function safePath(urlPath) {
 
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/health") {
-    sendJson(res, 200, { ok: true });
+    sendJson(res, 200, { ok: true, storage: useSupabase ? "supabase" : "sqlite" });
     return;
   }
 
   if (req.method === "GET" && url.pathname === "/api/counts") {
+    if (useSupabase) {
+      sendJson(res, 200, { counts: await countsSupabase() });
+      return;
+    }
     const rows = db.prepare(`
       SELECT pattern_id AS patternId, COUNT(*) AS count
       FROM cells
@@ -92,6 +267,10 @@ async function handleApi(req, res, url) {
   const patternMatch = url.pathname.match(/^\/api\/patterns\/([^/]+)\/cells$/);
   if (req.method === "GET" && patternMatch) {
     const patternId = patternMatch[1];
+    if (useSupabase) {
+      sendJson(res, 200, { cells: await loadPatternSupabase(patternId) });
+      return;
+    }
     const cells = db.prepare(`
       SELECT key, pattern_id AS patternId, row, col, thread, symbol, color, hex, data_url AS dataUrl,
         stitched, updated_at AS updatedAt
@@ -111,6 +290,11 @@ async function handleApi(req, res, url) {
       return;
     }
     const updatedAt = new Date().toISOString();
+    if (useSupabase) {
+      await saveCellSupabase(cell, updatedAt);
+      sendJson(res, 200, { ok: true, updatedAt });
+      return;
+    }
     db.prepare(`
       INSERT INTO cells (key, pattern_id, row, col, thread, symbol, color, hex, data_url, stitched, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -143,6 +327,11 @@ async function handleApi(req, res, url) {
   }
 
   if (req.method === "DELETE" && url.pathname === "/api/cells") {
+    if (useSupabase) {
+      await resetSupabase();
+      sendJson(res, 200, { ok: true });
+      return;
+    }
     db.prepare("DELETE FROM cells").run();
     sendJson(res, 200, { ok: true });
     return;
@@ -153,6 +342,11 @@ async function handleApi(req, res, url) {
     const key = decodeURIComponent(cellMatch[1]);
     const body = await readJson(req);
     const updatedAt = new Date().toISOString();
+    if (useSupabase) {
+      await patchCellSupabase(key, body, updatedAt);
+      sendJson(res, 200, { ok: true, updatedAt });
+      return;
+    }
     db.prepare(`
       INSERT INTO cells (key, pattern_id, row, col, thread, symbol, stitched, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -164,12 +358,23 @@ async function handleApi(req, res, url) {
 
   if (cellMatch && req.method === "DELETE") {
     const key = decodeURIComponent(cellMatch[1]);
+    if (useSupabase) {
+      await deleteCellSupabase({ ...parseCellPathKey(key), key });
+      sendJson(res, 200, { ok: true });
+      return;
+    }
     db.prepare("DELETE FROM cells WHERE key = ?").run(key);
     sendJson(res, 200, { ok: true });
     return;
   }
 
   sendJson(res, 404, { error: "Not found" });
+}
+
+function parseCellPathKey(key) {
+  const [patternId, position = "0-0"] = key.split(":");
+  const [row, col] = position.split("-").map(Number);
+  return { patternId, row, col };
 }
 
 const server = createServer(async (req, res) => {
