@@ -1,10 +1,10 @@
 {
-  "appId": "kr.flatcoop.pyeongtaekstitch",
-  "appName": "평택 한땀 여행",
+  "appId": "kr.flatcoop.hanttamhanttam",
+  "appName": "한땀한땀",
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
-    "hostname": "pyeongtaek-native",
+    "hostname": "hanttamhanttam-native",
     "androidScheme": "https",
     "iosScheme": "capacitor"
   },
