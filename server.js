@@ -61,15 +61,22 @@ function bufferToDataUrl(buffer, contentType) {
   return `data:${contentType || "image/jpeg"};base64,${Buffer.from(buffer).toString("base64")}`;
 }
 
+function supabaseHeaders(extra = {}) {
+  const headers = {
+    apikey: supabaseKey,
+    ...extra
+  };
+  if (supabaseKey.includes(".")) headers.Authorization = `Bearer ${supabaseKey}`;
+  return headers;
+}
+
 async function supabaseRequest(path, options = {}) {
   const response = await fetch(`${supabaseUrl}${path}`, {
     ...options,
-    headers: {
-      Authorization: `Bearer ${supabaseKey}`,
-      apikey: supabaseKey,
+    headers: supabaseHeaders({
       "Content-Type": "application/json",
       ...(options.headers || {})
-    }
+    })
   });
   if (!response.ok) {
     const text = await response.text();
@@ -120,7 +127,7 @@ async function listSupabaseObjects(prefix) {
 
 async function downloadSupabaseObject(path) {
   const response = await fetch(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(supabaseBucket)}/${path}`, {
-    headers: { Authorization: `Bearer ${supabaseKey}`, apikey: supabaseKey }
+    headers: supabaseHeaders()
   });
   if (!response.ok) throw new Error(`Supabase download ${response.status}`);
   return {
