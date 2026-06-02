@@ -24,7 +24,42 @@ npm run native:add:ios
 npm run native:sync
 ```
 
-## Android APK/AAB 만들기
+## Android debug APK
+
+GitHub Actions의 `Android APK` 워크플로가 debug APK를 생성합니다.
+
+## Android 정식 release APK/AAB
+
+GitHub Actions의 `Android Release` 워크플로가 release APK/AAB를 생성합니다.
+
+서명키가 없으면 `pyeongtaek-stitch-unsigned-release` 아티팩트가 생성됩니다. 이 파일은 검수/테스트용이며, Play Store나 지속 업데이트용 정식 배포에는 서명키가 필요합니다.
+
+정식 signed release를 만들려면 GitHub 저장소의 `Settings > Secrets and variables > Actions`에 아래 Secrets를 추가하세요.
+
+```text
+ANDROID_KEYSTORE_BASE64=release.keystore 파일을 base64로 인코딩한 값
+ANDROID_KEYSTORE_PASSWORD=키스토어 비밀번호
+ANDROID_KEY_ALIAS=키 alias
+ANDROID_KEY_PASSWORD=키 비밀번호
+```
+
+로컬에서 키스토어를 만드는 예시는 다음과 같습니다.
+
+```bash
+keytool -genkeypair \
+  -v \
+  -keystore release.keystore \
+  -alias pyeongtaek-stitch \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+
+base64 -i release.keystore | pbcopy
+```
+
+Secrets 설정 후 `Actions > Android Release > Run workflow`를 실행하면 `pyeongtaek-stitch-signed-release` 아티팩트가 생성됩니다.
+
+## Android Studio에서 직접 만들기
 
 ```bash
 npm run native:android
