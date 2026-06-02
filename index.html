@@ -117,6 +117,54 @@
     </dialog>
 
     <canvas id="colorCanvas" width="32" height="32" aria-hidden="true"></canvas>
+    <script>
+      (() => {
+        const nativeFetch = window.fetch.bind(window);
+        let countsCache = null;
+        let countsCacheAt = 0;
+        window.fetch = async (input, init = {}) => {
+          const method = (init.method || (typeof input === 'object' && input.method) || 'GET').toUpperCase();
+          const href = typeof input === 'string' ? input : input.url;
+          const path = new URL(href, location.href).pathname;
+          if (method === 'GET' && path === '/api/counts') {
+            if (countsCache && Date.now() - countsCacheAt < 8000) {
+              return new Response(JSON.stringify(countsCache), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            }
+            const response = await nativeFetch(input, init);
+            countsCache = await response.clone().json();
+            countsCacheAt = Date.now();
+            return new Response(JSON.stringify(countsCache), { status: response.status, headers: { 'Content-Type': 'application/json' } });
+          }
+          if (method !== 'GET') {
+            countsCache = null;
+          }
+          return nativeFetch(input, init);
+        };
+
+        const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+        Object.defineProperty(Element.prototype, 'innerHTML', {
+          get() { return descriptor.get.call(this); },
+          set(value) {
+            if (this.id === 'legendTable' && typeof value === 'string' && value.length > 60000 && value.includes('legend-row')) {
+              const saved = value;
+              const done = (saved.match(/완료/g) || []).length;
+              descriptor.set.call(this, `<div class="legend-summary"><div><b>색상표 1024칸</b><span>${done}칸 작업 완료. 전체 표는 필요할 때만 불러옵니다.</span></div><button class="legend-open" type="button">전체 표 열기</button></div>`);
+              queueMicrotask(() => {
+                const button = this.querySelector('.legend-open');
+                button?.addEventListener('click', () => {
+                  descriptor.set.call(this, saved);
+                  this.querySelectorAll('[data-key]').forEach(row => {
+                    row.addEventListener('click', () => window.openCell?.(row.dataset.key));
+                  });
+                });
+              });
+              return;
+            }
+            descriptor.set.call(this, value);
+          }
+        });
+      })();
+    </script>
     <script src="./app.js"></script>
     <script>
       (() => {
