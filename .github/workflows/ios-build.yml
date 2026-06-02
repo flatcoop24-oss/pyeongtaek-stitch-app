@@ -1,0 +1,76 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - 'native-bridge.js'
+      - 'icon.svg'
+      - 'manifest.webmanifest'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'scripts/build-native-assets.js'
+      - '.github/workflows/ios-build.yml'
+
+jobs:
+  build-ios-simulator:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build native web assets
+        run: npm run build:native
+
+      - name: Add iOS platform
+        run: npx cap add ios
+
+      - name: Sync iOS platform
+        run: npx cap sync ios
+
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package simulator app
+        run: |
+          mkdir -p artifacts
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path '*/Build/Products/Debug-iphonesimulator/App.app' -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Simulator app not found"
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" artifacts/pyeongtaek-stitch-ios-simulator-app.zip
+
+      - name: Upload iOS simulator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyeongtaek-stitch-ios-simulator-app
+          path: artifacts/pyeongtaek-stitch-ios-simulator-app.zip
+
+  build-ios-archive:
+    runs-on: macos-latest
+    if: false
+    steps:
+      - name: Disabled until Apple signing secrets are configured
+        run: echo "Configure Apple signing secrets, then enable this job for IPA/TestFlight archive builds."
