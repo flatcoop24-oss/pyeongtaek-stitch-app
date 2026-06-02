@@ -66,6 +66,7 @@ async function supabaseRequest(path, options = {}) {
     ...options,
     headers: {
       Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
       "Content-Type": "application/json",
       ...(options.headers || {})
     }
@@ -119,7 +120,7 @@ async function listSupabaseObjects(prefix) {
 
 async function downloadSupabaseObject(path) {
   const response = await fetch(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(supabaseBucket)}/${path}`, {
-    headers: { Authorization: `Bearer ${supabaseKey}` }
+    headers: { Authorization: `Bearer ${supabaseKey}`, apikey: supabaseKey }
   });
   if (!response.ok) throw new Error(`Supabase download ${response.status}`);
   return {
