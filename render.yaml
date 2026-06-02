@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pyeongtaek-stitch-app
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.0
+    disks:
+      - name: pyeongtaek-stitch-data
+        mountPath: /opt/render/project/src/data
+        sizeGB: 1
