@@ -65,6 +65,7 @@ h3 { margin: 8px 0; font-size: 23px; line-height: 1.18; }
 .journey-step span { font-size: 12px; line-height: 1.2; }
 .journey-step.is-active { border-color: var(--purple-600); background: linear-gradient(135deg, var(--purple-900), var(--purple-700)); color: #fff; }
 .journey-step.is-active b { color: var(--purple-900); }
+.journey-section .count-badge { display: none; }
 .pattern-lead { margin: 0 0 10px; color: var(--muted); font-size: 14px; font-weight: 760; line-height: 1.45; }
 .pattern-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
 .pattern-choice { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 10px; min-height: 76px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: rgba(255, 255, 255, 0.9); text-align: left; }
