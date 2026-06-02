@@ -43,21 +43,47 @@ ANDROID_KEY_ALIAS=키 alias
 ANDROID_KEY_PASSWORD=키 비밀번호
 ```
 
-로컬에서 키스토어를 만드는 예시는 다음과 같습니다.
+## iOS 시뮬레이터 빌드
+
+GitHub Actions의 `iOS Build` 워크플로가 iOS Simulator용 `.app` 번들을 생성합니다. 이 파일은 맥/Xcode 시뮬레이터 검수용입니다.
+
+## iPhone 설치/TestFlight/IPA
+
+실제 아이폰 설치, TestFlight, App Store 배포는 Apple 서명이 필요합니다.
+
+필요한 것:
+
+- Apple Developer 계정
+- Bundle Identifier: `kr.flatcoop.pyeongtaekstitch`
+- Apple Distribution 인증서
+- App Store 또는 Ad Hoc Provisioning Profile
+
+로컬에서 진행하는 가장 안정적인 방법:
 
 ```bash
-keytool -genkeypair \
-  -v \
-  -keystore release.keystore \
-  -alias pyeongtaek-stitch \
-  -keyalg RSA \
-  -keysize 2048 \
-  -validity 10000
-
-base64 -i release.keystore | pbcopy
+npm install
+npm run native:add:ios
+npm run native:ios
 ```
 
-Secrets 설정 후 `Actions > Android Release > Run workflow`를 실행하면 `pyeongtaek-stitch-signed-release` 아티팩트가 생성됩니다.
+Xcode가 열리면:
+
+1. `Signing & Capabilities`에서 Team 선택
+2. Bundle Identifier 확인: `kr.flatcoop.pyeongtaekstitch`
+3. 실제 기기 연결 또는 Any iOS Device 선택
+4. `Product > Archive`
+5. Organizer에서 `Distribute App` 선택
+6. TestFlight 또는 Ad Hoc/IPA 배포 선택
+
+GitHub Actions에서 IPA까지 자동 생성하려면 아래 Secrets를 추가한 뒤 `ios-build.yml`의 `build-ios-archive` job을 활성화하세요.
+
+```text
+APPLE_CERTIFICATE_P12_BASE64=Distribution 인증서 p12를 base64 인코딩한 값
+APPLE_CERTIFICATE_PASSWORD=p12 비밀번호
+APPLE_PROVISIONING_PROFILE_BASE64=mobileprovision 파일을 base64 인코딩한 값
+APPLE_TEAM_ID=Apple Team ID
+APPLE_BUNDLE_ID=kr.flatcoop.pyeongtaekstitch
+```
 
 ## Android Studio에서 직접 만들기
 
@@ -71,19 +97,6 @@ Android Studio가 열리면:
 2. APK 또는 Android App Bundle 선택
 3. 서명 키 생성/선택
 4. release 빌드 생성
-
-## iOS IPA 만들기
-
-```bash
-npm run native:ios
-```
-
-Xcode가 열리면:
-
-1. Signing & Capabilities에서 Team 선택
-2. Bundle Identifier 확인: `kr.flatcoop.pyeongtaekstitch`
-3. 실제 기기 또는 Archive 선택
-4. `Product > Archive`로 IPA/TestFlight 배포
 
 ## 네이티브 앱 동작
 
