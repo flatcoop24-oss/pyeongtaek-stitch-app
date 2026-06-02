@@ -314,6 +314,24 @@ h3 { margin: 8px 0; font-size: 23px; line-height: 1.18; }
   background: var(--panel);
   box-shadow: 0 10px 24px rgba(18, 15, 31, 0.08);
 }
+.legend-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.legend-summary b, .legend-summary span { display: block; }
+.legend-summary b { font-size: 17px; }
+.legend-summary span { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.legend-open {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--purple-900);
+  background: var(--acid);
+  font-weight: 950;
+}
 .legend-row {
   display: grid;
   grid-template-columns: 54px 104px 86px minmax(150px, 1fr) 112px 74px;
@@ -494,6 +512,8 @@ dialog p { color: var(--muted); line-height: 1.5; }
   .section-heading { align-items: flex-start; flex-direction: column; }
   .count-stack { justify-content: flex-start; }
   .pattern-picker { grid-template-columns: 1fr; }
+  .legend-summary { grid-template-columns: 1fr; }
+  .legend-open { width: 100%; }
   .spot-card { grid-template-columns: 58px 1fr 40px; }
   .spot-thumb { width: 58px; height: 58px; }
   .bottom-nav { gap: 4px; }
