@@ -1,0 +1,11 @@
+{
+  "name": "pyeongtaek-stitch-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "평택 8경 사진 십자수 작업 앱",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js",
+    "build": "node -e \"console.log('Static app: no build step required')\""
+  }
+}
