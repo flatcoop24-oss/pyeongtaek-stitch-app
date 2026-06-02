@@ -2,21 +2,20 @@
   "id": "/",
   "name": "평택 한땀 여행",
   "short_name": "평택한땀",
-  "start_url": "/",
+  "start_url": "/?source=homescreen",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#120f1f",
   "theme_color": "#120f1f",
   "description": "평택 8경을 여행하며 사진 색으로 십자수 도안을 채우는 모바일 앱",
   "categories": ["travel", "photo", "lifestyle"],
+  "shortcuts": [
+    { "name": "도안 열기", "short_name": "도안", "url": "/?source=homescreen#patternTitle" },
+    { "name": "촬영 포인트", "short_name": "8경", "url": "/?source=homescreen#spotTitle" }
+  ],
   "icons": [
-    {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
