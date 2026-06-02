@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pyeongtaek-stitch-flat-v3';
+const CACHE_NAME = 'pyeongtaek-stitch-flat-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
