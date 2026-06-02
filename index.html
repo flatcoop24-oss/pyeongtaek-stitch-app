@@ -3,22 +3,38 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#1f6f65">
+    <meta name="theme-color" content="#120f1f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="평택한땀">
     <title>평택 한땀 여행</title>
     <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./icon.svg">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">평택 8경 포토 십자수</p>
-          <h1>평택 한땀 여행</h1>
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">F</div>
+          <div>
+            <p class="eyebrow">FLAT photo stitch</p>
+            <h1>평택 한땀 여행</h1>
+          </div>
         </div>
         <button class="icon-button" id="resetButton" type="button" aria-label="초기화" title="초기화">↺</button>
       </header>
 
       <main>
+        <section class="install-panel" id="installPanel" aria-label="앱 설치">
+          <div>
+            <p class="eyebrow">Install app</p>
+            <h2>홈 화면에 저장해서 바로 열기</h2>
+            <p id="installHint">처음 한 번만 설치하면 렌더 대시보드 없이 휴대폰 앱처럼 실행할 수 있습니다.</p>
+          </div>
+          <button id="installButton" type="button">앱 설치</button>
+        </section>
+
         <section class="hero-panel" aria-label="십자수 진행 현황">
           <div class="progress-ring" aria-hidden="true">
             <span id="progressPercent">0%</span>
@@ -78,6 +94,7 @@
         <a href="#patternTitle">도안</a>
         <a href="#legendTitle">표</a>
         <a href="#spotTitle">8경</a>
+        <button id="navInstallButton" type="button">설치</button>
         <button id="shareButton" type="button">공유</button>
         <button id="downloadButton" type="button">저장</button>
       </footer>
@@ -101,5 +118,56 @@
 
     <canvas id="colorCanvas" width="32" height="32" aria-hidden="true"></canvas>
     <script src="./app.js"></script>
+    <script>
+      (() => {
+        const installPanel = document.querySelector('#installPanel');
+        const installButton = document.querySelector('#installButton');
+        const navInstallButton = document.querySelector('#navInstallButton');
+        const installHint = document.querySelector('#installHint');
+        let deferredPrompt = null;
+        const standalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const updateInstallUi = () => {
+          if (standalone()) {
+            installPanel?.classList.add('is-installed');
+            if (installHint) installHint.textContent = '홈 화면 앱으로 실행 중입니다.';
+            if (installButton) installButton.textContent = '설치 완료';
+            installButton?.setAttribute('disabled', 'disabled');
+            navInstallButton?.setAttribute('disabled', 'disabled');
+            return;
+          }
+          if (deferredPrompt) {
+            if (installHint) installHint.textContent = '버튼을 눌러 휴대폰 홈 화면에 앱을 추가하세요.';
+            installButton?.removeAttribute('disabled');
+            navInstallButton?.removeAttribute('disabled');
+          }
+        };
+        const showInstallHelp = () => {
+          alert('아이폰은 Safari 공유 버튼을 누른 뒤 “홈 화면에 추가”를 선택하세요. 안드로이드는 브라우저 메뉴 또는 이 설치 버튼으로 앱을 추가할 수 있습니다.');
+        };
+        const promptInstall = async () => {
+          if (standalone()) return;
+          if (!deferredPrompt) return showInstallHelp();
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          updateInstallUi();
+        };
+        window.addEventListener('beforeinstallprompt', event => {
+          event.preventDefault();
+          deferredPrompt = event;
+          updateInstallUi();
+        });
+        window.addEventListener('appinstalled', () => {
+          deferredPrompt = null;
+          updateInstallUi();
+        });
+        installButton?.addEventListener('click', promptInstall);
+        navInstallButton?.addEventListener('click', promptInstall);
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+        }
+        updateInstallUi();
+      })();
+    </script>
   </body>
 </html>
