@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pyeongtaek-stitch-flat-v1';
+const CACHE_NAME = 'pyeongtaek-stitch-flat-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -31,6 +31,17 @@ self.addEventListener('fetch', event => {
       headers: { 'Content-Type': 'application/json' },
       status: 503
     })));
+    return;
+  }
+
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
+        return response;
+      }).catch(() => caches.match('/index.html').then(cached => cached || caches.match('/')))
+    );
     return;
   }
 
