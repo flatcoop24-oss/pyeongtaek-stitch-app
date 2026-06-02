@@ -31,6 +31,11 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_cells_pattern ON cells(pattern_id);
 `);
+try {
+  db.exec("ALTER TABLE cells ADD COLUMN location_json TEXT;");
+} catch {
+  // Existing deployments may already have the column.
+}
 
 const mime = {
   ".html": "text/html; charset=utf-8",
@@ -150,6 +155,7 @@ async function saveCellSupabase(cell, updatedAt) {
     hex: cell.hex || null,
     stitched: Boolean(cell.stitched),
     updatedAt,
+    location: cell.location || null,
     photoPath: photo ? storagePath("photos", cell) : null
   };
   if (photo) await uploadSupabaseObject(record.photoPath, photo.buffer, photo.contentType);
@@ -281,11 +287,20 @@ async function handleApi(req, res, url) {
     }
     const cells = db.prepare(`
       SELECT key, pattern_id AS patternId, row, col, thread, symbol, color, hex, data_url AS dataUrl,
-        stitched, updated_at AS updatedAt
+        stitched, updated_at AS updatedAt, location_json AS locationJson
       FROM cells
       WHERE pattern_id = ?
       ORDER BY row, col
-    `).all(patternId).map((cell) => ({ ...cell, stitched: Boolean(cell.stitched) }));
+    `).all(patternId).map((cell) => {
+      let location = null;
+      try {
+        location = cell.locationJson ? JSON.parse(cell.locationJson) : null;
+      } catch {
+        location = null;
+      }
+      const { locationJson, ...rest } = cell;
+      return { ...rest, stitched: Boolean(cell.stitched), location };
+    });
     sendJson(res, 200, { cells });
     return;
   }
@@ -304,8 +319,8 @@ async function handleApi(req, res, url) {
       return;
     }
     db.prepare(`
-      INSERT INTO cells (key, pattern_id, row, col, thread, symbol, color, hex, data_url, stitched, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO cells (key, pattern_id, row, col, thread, symbol, color, hex, data_url, stitched, updated_at, location_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(key) DO UPDATE SET
         pattern_id = excluded.pattern_id,
         row = excluded.row,
@@ -316,7 +331,8 @@ async function handleApi(req, res, url) {
         hex = excluded.hex,
         data_url = excluded.data_url,
         stitched = excluded.stitched,
-        updated_at = excluded.updated_at
+        updated_at = excluded.updated_at,
+        location_json = excluded.location_json
     `).run(
       cell.key,
       cell.patternId,
@@ -328,7 +344,8 @@ async function handleApi(req, res, url) {
       cell.hex || null,
       cell.dataUrl || null,
       cell.stitched ? 1 : 0,
-      updatedAt
+      updatedAt,
+      cell.location ? JSON.stringify(cell.location) : null
     );
     sendJson(res, 200, { ok: true, updatedAt });
     return;
@@ -356,10 +373,10 @@ async function handleApi(req, res, url) {
       return;
     }
     db.prepare(`
-      INSERT INTO cells (key, pattern_id, row, col, thread, symbol, stitched, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO cells (key, pattern_id, row, col, thread, symbol, stitched, updated_at, location_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(key) DO UPDATE SET stitched = excluded.stitched, updated_at = excluded.updated_at
-    `).run(key, body.patternId, body.row, body.col, body.thread, body.symbol, body.stitched ? 1 : 0, updatedAt);
+    `).run(key, body.patternId, body.row, body.col, body.thread, body.symbol, body.stitched ? 1 : 0, updatedAt, body.location ? JSON.stringify(body.location) : null);
     sendJson(res, 200, { ok: true, updatedAt });
     return;
   }
