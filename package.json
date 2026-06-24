@@ -1,26 +1,10 @@
 {
-  "name": "pyeongtaek-stitch-app",
+  "name": "pyeongtaek-chaezip-tour",
   "version": "1.0.0",
   "private": true,
-  "description": "평택 8경 사진 십자수 작업 앱",
+  "description": "평택채집 로컬투어 GitHub Pages site",
   "scripts": {
-    "start": "node server.js",
-    "serve": "node server.js",
-    "build": "node -e \"console.log('Static app: no build step required')\"",
-    "build:native": "node scripts/build-native-assets.js",
-    "native:sync": "npm run build:native && npx cap sync",
-    "native:add:android": "npm run build:native && npx cap add android",
-    "native:add:ios": "npm run build:native && npx cap add ios",
-    "native:android": "npm run native:sync && npx cap open android",
-    "native:ios": "npm run native:sync && npx cap open ios"
-  },
-  "dependencies": {
-    "@capacitor/android": "^7.0.0",
-    "@capacitor/app": "^7.0.0",
-    "@capacitor/core": "^7.0.0",
-    "@capacitor/ios": "^7.0.0"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "^7.0.0"
+    "start": "python3 -m http.server 4173",
+    "build": "echo 'Static GitHub Pages site: no build step required'"
   }
 }

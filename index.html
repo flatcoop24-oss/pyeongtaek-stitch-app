@@ -1,255 +1,86 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#120f1f">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="한땀한땀">
-    <title>한땀한땀</title>
-    <link rel="manifest" href="./manifest.webmanifest">
-    <link rel="apple-touch-icon" href="./icon.svg">
-    <link rel="stylesheet" href="./styles.css">
-    <style>
-      .launch-intro { position: fixed; inset: 0; z-index: 999; display: grid; place-items: center; padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom)); color: #fff; background: radial-gradient(circle at 78% 18%, rgba(216, 255, 98, 0.23), transparent 24%), linear-gradient(145deg, #090711 0%, #120f1f 38%, #41226b 72%, #7d2494 100%); opacity: 1; transition: opacity 0.48s ease, visibility 0.48s ease; }
-      .launch-intro.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-      .launch-scene { width: min(100%, 430px); }
-      .launch-logo-row { display: flex; align-items: center; gap: 14px; margin-bottom: 42px; }
-      .launch-logo { display: grid; place-items: center; width: 64px; height: 64px; border: 2px solid rgba(255,255,255,.92); border-radius: 8px; background: linear-gradient(135deg, #2c235f, #7d2494); box-shadow: 0 22px 48px rgba(0,0,0,.28); font-size: 38px; font-weight: 950; }
-      .launch-label { margin: 0 0 4px; color: #d8ff62; font-size: 12px; font-weight: 950; text-transform: uppercase; }
-      .launch-title { margin: 0; font-size: clamp(36px, 11vw, 58px); line-height: .96; letter-spacing: 0; }
-      .launch-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin: 0 0 34px; }
-      .launch-stitch { position: relative; aspect-ratio: 1; border: 1px solid rgba(255,255,255,.2); border-radius: 4px; background: rgba(255,255,255,.08); animation: stitchGlow 1.9s ease-in-out infinite; animation-delay: calc(var(--i) * 70ms); }
-      .launch-stitch::before, .launch-stitch::after { content: ""; position: absolute; inset: 24%; border-top: 2px solid rgba(255,255,255,.72); transform: rotate(45deg); }
-      .launch-stitch::after { transform: rotate(-45deg); }
-      .launch-stitch:nth-child(3n) { background: rgba(216,255,98,.18); }
-      .launch-stitch:nth-child(5n) { background: rgba(255,255,255,.16); }
-      .launch-copy { margin: 0 0 24px; color: rgba(255,255,255,.78); font-size: 17px; font-weight: 800; line-height: 1.45; }
-      .launch-start { width: 100%; min-height: 54px; border: 0; border-radius: 8px; color: #120f1f; background: #d8ff62; font-weight: 950; font-size: 17px; }
-      .region-section { margin: 0 0 22px; }
-      .region-panel { display: grid; grid-template-columns: minmax(230px, 0.9fr) 1fr; gap: 14px; padding: 14px; border: 1px solid rgba(18, 15, 31, 0.13); border-radius: 8px; background: rgba(255, 255, 255, 0.88); box-shadow: 0 12px 28px rgba(18, 15, 31, 0.1); }
-      .korea-map { position: relative; min-height: 312px; overflow: hidden; border-radius: 8px; background: linear-gradient(150deg, #120f1f 0%, #2c235f 52%, #65268d 100%); }
-      .korea-map::before { content: ""; position: absolute; left: 31%; top: 8%; width: 42%; height: 77%; border-radius: 46% 54% 49% 44% / 30% 42% 56% 70%; background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)); border: 1px solid rgba(255,255,255,.34); transform: rotate(-7deg); }
-      .korea-map::after { content: ""; position: absolute; left: 19%; bottom: 8%; width: 54px; height: 38px; border-radius: 45% 55% 50% 50%; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.24); transform: rotate(-10deg); }
-      .map-label { position: absolute; left: 14px; top: 12px; z-index: 2; color: rgba(255,255,255,.72); font-size: 12px; font-weight: 950; text-transform: uppercase; }
-      .map-dot { position: absolute; left: var(--x); top: var(--y); z-index: 3; transform: translate(-50%, -50%); display: grid; place-items: center; min-width: 42px; height: 26px; padding: 0 8px; border: 1px solid rgba(255,255,255,.26); border-radius: 999px; color: rgba(255,255,255,.62); background: rgba(5,5,5,.3); font-size: 11px; font-weight: 900; }
-      .map-dot.is-active { min-width: 62px; height: 34px; border-color: #d8ff62; color: #120f1f; background: #d8ff62; box-shadow: 0 0 0 6px rgba(216,255,98,.14); }
-      .map-dot[aria-disabled="true"] { opacity: .72; }
-      .region-info { display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-width: 0; }
-      .region-copy { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.48; }
-      .region-current { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-      .region-current strong { font-size: 22px; line-height: 1.1; }
-      .region-current span { color: var(--muted); font-size: 13px; line-height: 1.4; }
-      .region-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-      .region-list button { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: #f0edf7; font-weight: 900; }
-      .region-list button.is-active { border-color: #65268d; color: #120f1f; background: #d8ff62; }
-      .region-list button:disabled { cursor: not-allowed; opacity: .46; }
-      .bottom-nav { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-      @keyframes stitchGlow { 0%, 100% { transform: scale(.94); opacity: .52; } 42% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 1px rgba(216,255,98,.42); } }
-      @media (max-width: 700px) { .region-panel { grid-template-columns: 1fr; } .korea-map { min-height: 286px; } .region-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      @media (max-width: 560px) { .bottom-nav { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; } .bottom-nav a, .bottom-nav button { font-size: 11px; } }
-      @media (prefers-reduced-motion: reduce) { .launch-intro, .launch-stitch { transition: none; animation: none; } }
-    </style>
-  </head>
-  <body>
-    <section class="launch-intro" id="launchIntro" aria-label="앱 인트로">
-      <div class="launch-scene">
-        <div class="launch-logo-row">
-          <div class="launch-logo" aria-hidden="true">F</div>
-          <div><p class="launch-label">FLAT photo stitch</p><h2 class="launch-title">한땀<br>한땀</h2></div>
-        </div>
-        <div class="launch-grid" aria-hidden="true">
-          <span class="launch-stitch" style="--i:0"></span><span class="launch-stitch" style="--i:1"></span><span class="launch-stitch" style="--i:2"></span><span class="launch-stitch" style="--i:3"></span><span class="launch-stitch" style="--i:4"></span><span class="launch-stitch" style="--i:5"></span><span class="launch-stitch" style="--i:6"></span><span class="launch-stitch" style="--i:7"></span>
-          <span class="launch-stitch" style="--i:8"></span><span class="launch-stitch" style="--i:9"></span><span class="launch-stitch" style="--i:10"></span><span class="launch-stitch" style="--i:11"></span><span class="launch-stitch" style="--i:12"></span><span class="launch-stitch" style="--i:13"></span><span class="launch-stitch" style="--i:14"></span><span class="launch-stitch" style="--i:15"></span>
-          <span class="launch-stitch" style="--i:16"></span><span class="launch-stitch" style="--i:17"></span><span class="launch-stitch" style="--i:18"></span><span class="launch-stitch" style="--i:19"></span><span class="launch-stitch" style="--i:20"></span><span class="launch-stitch" style="--i:21"></span><span class="launch-stitch" style="--i:22"></span><span class="launch-stitch" style="--i:23"></span>
-        </div>
-        <p class="launch-copy">전국의 도시를 한 땀씩 여행하며 지역의 장면을 사진 도안으로 완성합니다.</p>
-        <button class="launch-start" id="launchStartButton" type="button">시작하기</button>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>평택채집 로컬투어</title>
+  <meta name="description" content="평택채집은 어린 시절 여름방학처럼 동네의 소중한 무언가를 함께 찾아오는 평택 로컬투어입니다.">
+  <link rel="icon" href="assets/favicon-20260624.png" type="image/png">
+  <script src="config.js"></script>
+  <style>
+    :root{--paper:#fffefa;--ink:#17120f;--muted:#594f46;--red:#e6503f;--blue:#2e7bcf;--green:#348e58;--yellow:#f2bd2e;--pink:#f48ba8;--line:rgba(23,18,15,.25);--shadow:rgba(23,18,15,.13);--max:1120px;--head:76px}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:radial-gradient(circle at 12px 20px,rgba(23,18,15,.04) 0 1px,transparent 1.6px),linear-gradient(90deg,rgba(46,123,207,.025) 1px,transparent 1px),linear-gradient(0deg,rgba(52,142,88,.025) 1px,transparent 1px),var(--paper);background-size:42px 42px,34px 34px,34px 34px,auto;font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;line-height:1.65;word-break:keep-all}body:before{content:"";position:fixed;inset:0;z-index:-1;opacity:.5;background:repeating-linear-gradient(-7deg,transparent 0 46px,rgba(242,189,46,.05) 47px 49px,transparent 50px 92px)}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}button{cursor:pointer}img{display:block;max-width:100%}.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.site-header{position:sticky;top:0;z-index:20;min-height:var(--head);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px clamp(18px,4vw,42px);background:rgba(255,254,250,.92);border-bottom:2px solid var(--ink);box-shadow:0 7px 0 rgba(242,189,46,.18);backdrop-filter:blur(10px)}.brand{display:flex;align-items:center;gap:10px;font-size:clamp(1.35rem,2vw,1.8rem);font-weight:900;text-shadow:.6px .3px 0 rgba(23,18,15,.28),-.7px .2px 0 rgba(23,18,15,.18)}.brand img,.hero-logo,.apply-note img{mix-blend-mode:multiply}.site-nav{display:flex;gap:clamp(10px,2vw,24px);font-weight:900}.site-nav a{position:relative;padding:6px 2px;text-shadow:.5px .25px 0 rgba(23,18,15,.22)}.site-nav a:after{content:"";position:absolute;left:0;right:0;bottom:5px;height:6px;z-index:-1;background:rgba(242,189,46,.55);transform:rotate(-1.7deg) scaleX(0);transform-origin:left;transition:transform .16s}.site-nav a:hover:after{transform:rotate(-1.7deg) scaleX(1)}.nav-toggle{display:none;width:44px;height:42px;border:2px solid var(--ink);border-radius:6px;background:transparent}.nav-toggle span{display:block;height:3px;margin:5px 0;background:var(--ink);border-radius:99px}.section{padding:clamp(70px,9vw,118px) clamp(18px,5vw,58px);scroll-margin-top:calc(var(--head) + 18px)}.hero{min-height:calc(90svh - var(--head));display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.84fr);align-items:center;gap:clamp(34px,6vw,80px);max-width:1260px;margin:auto;padding-top:clamp(48px,8vw,90px)}.eyebrow{margin:0 0 10px;color:var(--blue);font-size:.82rem;font-weight:900;text-transform:uppercase;text-shadow:.5px .25px 0 rgba(46,123,207,.25)}h1,h2{font-family:"Nanum Pen Script","Gaegu","Apple SD Gothic Neo",cursive,sans-serif;letter-spacing:0;line-height:1.02;text-shadow:.9px .4px 0 rgba(23,18,15,.45),-1px .2px 0 rgba(23,18,15,.32),1.4px -.8px 0 rgba(23,18,15,.24),0 0 2px rgba(23,18,15,.34);filter:contrast(1.08)}h1{margin:0;font-size:clamp(4.3rem,13vw,9.5rem);transform:rotate(-.7deg)}h2{margin:0;font-size:clamp(2.55rem,7vw,5.2rem);transform:rotate(-.45deg)}h3{margin:0 0 8px;font-size:1.35rem}.core-copy{max-width:720px;margin:24px 0 0;font-size:clamp(1.25rem,2.25vw,2.15rem);font-weight:900;line-height:1.58;text-shadow:.55px .35px 0 rgba(23,18,15,.22)}.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}.crayon-button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 20px;border:2px solid var(--ink);border-radius:7px;background:#fff;color:var(--ink);font-weight:900;box-shadow:5px 5px 0 var(--ink);transition:transform .14s,box-shadow .14s}.crayon-button:hover{transform:translate(2px,2px);box-shadow:3px 3px 0 var(--ink)}.crayon-button.primary{background:var(--yellow)}.crayon-button.ghost{background:#fff}.hero-art{position:relative;min-height:410px}.hero-stamp{position:absolute;right:5%;top:2%;z-index:2;width:clamp(124px,18vw,190px);transform:rotate(5deg)}.hero-logo{width:100%;height:auto;filter:contrast(1.12)}.drawing{position:absolute;inset:12% 0 0 0;border:3px solid var(--ink);border-radius:47% 53% 49% 51%;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,247,223,.85));box-shadow:8px 10px 0 rgba(46,123,207,.2);overflow:hidden}.drawing i{position:absolute;display:block;border:5px solid currentColor;border-radius:999px;transform:rotate(var(--r,0deg))}.drawing .sun{right:52px;top:42px;width:82px;height:82px;color:var(--yellow)}.drawing .hill{left:26px;right:28px;bottom:95px;height:135px;color:var(--green);border-width:8px;border-radius:50% 50% 0 0;border-bottom:0}.drawing .river{left:34px;right:24px;bottom:48px;height:72px;color:var(--blue);border-width:8px;border-left:0;border-right:0}.drawing .house{left:86px;top:148px;width:122px;height:92px;color:var(--red);border-radius:4px}.drawing .note{right:84px;bottom:76px;width:130px;height:92px;color:var(--ink);border-radius:8px}.pocket-strip{max-width:var(--max);margin:0 auto;padding:0 clamp(18px,5vw,58px) 30px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.pocket-item{min-height:96px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:8px;background:#fff;box-shadow:4px 5px 0 rgba(23,18,15,.12);transform:rotate(var(--r,-1deg))}.pocket-item:nth-child(2){--r:1.4deg;background:#fff7df}.pocket-item:nth-child(3){--r:-2deg;background:#eef8ff}.pocket-item:nth-child(4){--r:.8deg;background:#fff0f5}.pocket-item:nth-child(5){--r:-.7deg;background:#edf8ef}.pocket-item span{font-size:1.18rem;font-weight:900;text-shadow:.5px .25px 0 rgba(23,18,15,.25)}.section-inner{max-width:var(--max);margin:auto}.section-heading{margin-bottom:26px}.about-grid,.apply-layout,.operator-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:24px}.story,.field-note,.paper-form,.apply-note,.review-note,.program-slot,.operator-panel,.host-card{border:2px solid var(--ink);border-radius:8px;background:#fff;box-shadow:6px 7px 0 rgba(23,18,15,.12)}.story{padding:26px;font-size:1.1rem;font-weight:750}.field-note,.apply-note,.operator-panel{padding:24px;background:#fff7df}.field-note ul{margin:12px 0 0;padding-left:22px}.program-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.program-slot{min-height:172px;padding:22px;background:#fff}.slot-number{display:inline-block;margin-bottom:14px;padding:5px 10px;border:2px solid var(--ink);border-radius:999px;background:var(--pink);font-weight:900}.paper-form{padding:24px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}label{display:grid;gap:7px;margin-bottom:14px;font-weight:900}input,select,textarea{width:100%;border:2px solid var(--ink);border-radius:7px;background:#fffefa;padding:12px 13px;box-shadow:inset 2px 2px 0 rgba(23,18,15,.08)}textarea{resize:vertical}.check-line{display:flex;align-items:flex-start;gap:9px}.check-line input{width:auto;margin-top:6px}.message{min-height:24px;margin:14px 0 0;font-weight:900;color:var(--green)}.apply-note{display:grid;align-content:center;justify-items:center;text-align:center;font-size:1.2rem;font-weight:900}.apply-note img{width:132px;margin-bottom:16px}.reviews-grid,.hosts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.review-note,.host-card{padding:22px;min-height:170px;background:#fff}.review-note:nth-child(2n){background:#edf8ef}.review-note:nth-child(3n){background:#eef8ff}.review-note p{font-size:1.08rem;font-weight:850}.review-note span,.review-note small{display:block;margin-top:10px;color:var(--muted);font-weight:900}.review-form-wrap{margin-top:22px}.host-card{background:#fff7df}.operator-lock{max-width:620px}.operator-grid{margin-top:18px}.table-wrap{overflow:auto;border:2px solid var(--ink);border-radius:8px;background:#fff}table{border-collapse:collapse;width:100%;min-width:760px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#fff7df}.tool-row{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.mini{min-height:38px;padding:8px 12px;border:2px solid var(--ink);border-radius:7px;background:#fff;font-weight:900}.site-footer{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:28px clamp(18px,4vw,42px);border-top:2px solid var(--ink);background:#fff7df}.site-footer img{width:38px;display:inline-block;vertical-align:middle;margin-right:8px}.hidden{display:none!important}@media(max-width:820px){.site-nav{display:none;position:absolute;top:100%;right:12px;left:12px;flex-direction:column;padding:18px;border:2px solid var(--ink);border-radius:8px;background:#fffefa}.site-nav.open{display:flex}.nav-toggle{display:block}.hero,.about-grid,.apply-layout,.operator-grid{grid-template-columns:1fr}.hero-art{min-height:330px}.pocket-strip,.program-board,.reviews-grid,.hosts-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.site-footer{display:block}.site-footer p{margin:10px 0 0}}@media(max-width:520px){h1{font-size:4.4rem}.section{padding-left:16px;padding-right:16px}.hero-stamp{width:120px}.drawing{inset:18% 0 0 0}.crayon-button{width:100%}}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="평택채집 홈"><img src="assets/logo-chaezip-20260624-nukki.png" alt="" width="40" height="50"><span>평택채집</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav"><span></span><span></span><span></span><em class="visually-hidden">메뉴</em></button>
+    <nav id="site-nav" class="site-nav" aria-label="주요 메뉴"><a href="#home">홈</a><a href="#about">소개</a><a href="#program">프로그램</a><a href="#apply">참가 신청</a><a href="#reviews">후기</a><a href="#hosts">진행자</a></nav>
+  </header>
+
+  <main>
+    <section id="home" class="hero section">
+      <div>
+        <p class="eyebrow">Pyeongtaek Local Tour</p>
+        <h1>평택채집</h1>
+        <p class="core-copy">평택채집은 어린 시절 여름방학, 밖에서 소중한 무언가를 찾아오던 그 때로 돌아가보는 시간입니다. 취향이 귀해지는 시대, 평택채집과 함께 고귀한 동네이웃이 되어주실래요?</p>
+        <div class="hero-actions"><a class="crayon-button primary" href="#apply">이웃으로 신청하기</a><a class="crayon-button ghost" href="#program">회차 둘러보기</a></div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-stamp"><img class="hero-logo" src="assets/logo-chaezip-20260624-nukki.png" alt=""></div>
+        <div class="drawing"><i class="sun"></i><i class="hill"></i><i class="river"></i><i class="house"></i><i class="note"></i></div>
       </div>
     </section>
 
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">F</div><div><p class="eyebrow">FLAT photo stitch</p><h1>한땀한땀</h1></div></div>
-        <button class="icon-button" id="resetButton" type="button" aria-label="초기화" title="초기화">↺</button>
-      </header>
+    <div class="pocket-strip" aria-label="채집 미리보기"><div class="pocket-item"><span>골목</span></div><div class="pocket-item"><span>시장</span></div><div class="pocket-item"><span>냄새</span></div><div class="pocket-item"><span>사람</span></div><div class="pocket-item"><span>작은 기록</span></div></div>
 
-      <main>
-        <section class="install-panel" id="installPanel" aria-label="홈 화면 등록">
-          <div><p class="eyebrow">Home launcher</p><h2>홈 화면에서 바로 실행하기</h2><p id="installHint">휴대폰 홈 화면에 담아두면 주소창 없이 독립 화면으로 실행됩니다.</p></div>
-          <button id="installButton" type="button">내 폰에 담기</button>
-        </section>
+    <section id="about" class="section"><div class="section-inner"><div class="section-heading"><p class="eyebrow">02. 평택채집 소개</p><h2>왜 채집인가</h2></div><div class="about-grid"><div class="story"><p>채집은 새것을 많이 소유하는 일이 아니라, 이미 곁에 있던 것을 다시 보는 일에 가깝습니다. 평택채집은 골목의 빛, 오래된 간판의 글자, 시장에서 건네지는 말, 하천 옆의 바람을 천천히 모읍니다.</p><p>멀리 떠나지 않아도 동네는 충분히 낯설고 귀합니다. 우리가 함께 걷고, 묻고, 적고, 나누는 동안 평택은 각자의 취향이 묻은 작은 채집장이 됩니다.</p></div><aside class="field-note"><h3>채집장에 담는 것</h3><ul><li>오늘 처음 본 동네의 표정</li><li>혼자 지나쳤던 장소의 이야기</li><li>나와 닮은 이웃의 취향</li><li>돌아와서도 남는 작은 기록</li></ul></aside></div></div></section>
 
-        <section class="hero-panel" aria-label="십자수 진행 현황"><div class="progress-ring" aria-hidden="true"><span id="progressPercent">0%</span></div><div><p class="hero-kicker">현재 지역: 평택</p><p class="hero-copy">인트로에서 시작해 한국 지도, 평택 8경 도안, 사진 채우기, 완성 저장과 공유까지 앱 안에서 한 번에 이어집니다.</p></div></section>
+    <section id="program" class="section"><div class="section-inner"><div class="section-heading"><p class="eyebrow">03. 프로그램 안내</p><h2>회차와 일정</h2></div><div class="program-board"><article class="program-slot"><span class="slot-number">1회차</span><h3>비워둔 채집장</h3><p>장소와 시간이 적힐 자리</p></article><article class="program-slot"><span class="slot-number">2회차</span><h3>비워둔 채집장</h3><p>장소와 시간이 적힐 자리</p></article><article class="program-slot"><span class="slot-number">3회차</span><h3>비워둔 채집장</h3><p>장소와 시간이 적힐 자리</p></article></div></div></section>
 
-        <section class="journey-section" aria-labelledby="journeyTitle">
-          <div class="section-heading"><div><p class="eyebrow">Journey</p><h2 id="journeyTitle">한땀한땀 여정</h2></div></div>
-          <div class="journey-rail" aria-label="사용 흐름">
-            <a href="#regionTitle" class="journey-step is-active"><b>1</b><span>한국 지도</span></a>
-            <a href="#regionTitle" class="journey-step"><b>2</b><span>평택 선택</span></a>
-            <a href="#patternTitle" class="journey-step"><b>3</b><span>8경 도안</span></a>
-            <a href="#patternTitle" class="journey-step"><b>4</b><span>사진 채우기</span></a>
-            <button id="flowSaveButton" class="journey-step" type="button"><b>5</b><span>완성 저장</span></button>
-            <button id="flowShareButton" class="journey-step" type="button"><b>6</b><span>공유</span></button>
-          </div>
-        </section>
+    <section id="apply" class="section"><div class="section-inner"><div class="section-heading"><p class="eyebrow">04. 참가 신청</p><h2>이웃이 되어주세요</h2></div><div class="apply-layout"><form id="reservation-form" class="paper-form"><div class="form-row"><label>이름<input name="name" autocomplete="name" required placeholder="이름을 적어주세요"></label><label>연락처<input name="phone" autocomplete="tel" required placeholder="010-0000-0000"></label></div><div class="form-row"><label>이메일<input type="email" name="email" autocomplete="email" placeholder="hello@example.com"></label><label>함께 오는 이웃 수<input type="number" name="people" min="1" max="8" value="1" required></label></div><label>희망 회차<select name="session" required><option value="">선택해주세요</option><option>일정 공개 알림</option><option>1회차</option><option>2회차</option><option>3회차</option></select></label><label>오늘 채집하고 싶은 것<textarea name="wish" rows="5" placeholder="좋아하는 장소, 궁금한 동네, 함께 나누고 싶은 취향"></textarea></label><label class="check-line"><input type="checkbox" name="privacy" required><span>신청 확인을 위한 연락에 동의합니다.</span></label><button class="crayon-button primary" type="submit">채집 신청 보내기</button><p id="reservation-message" class="message" role="status"></p></form><aside class="apply-note"><img src="assets/logo-chaezip-20260624-nukki.png" alt=""><p>신청은 작은 쪽지를 건네듯 남겨주세요. 회차가 열리면 가장 먼저 동네이웃에게 연락드릴게요.</p></aside></div></div></section>
 
-        <section class="region-section" aria-labelledby="regionTitle">
-          <div class="section-heading"><div><p class="eyebrow">Region map</p><h2 id="regionTitle">지역 선택</h2></div><span class="count-badge">활성 지역 <b>1</b>/전국</span></div>
-          <div class="region-panel">
-            <div class="korea-map" aria-label="전국 지도, 현재 평택만 선택 가능">
-              <span class="map-label">Korea stitch map</span>
-              <span class="map-dot" style="--x:42%;--y:23%" aria-disabled="true">서울</span>
-              <span class="map-dot is-active" style="--x:45%;--y:39%" aria-current="true">평택</span>
-              <span class="map-dot" style="--x:57%;--y:32%" aria-disabled="true">강원</span>
-              <span class="map-dot" style="--x:54%;--y:52%" aria-disabled="true">대전</span>
-              <span class="map-dot" style="--x:63%;--y:66%" aria-disabled="true">부산</span>
-              <span class="map-dot" style="--x:31%;--y:83%" aria-disabled="true">제주</span>
-            </div>
-            <div class="region-info">
-              <div class="region-current"><strong>평택 8경</strong><span>전국 지도에서 현재 선택 가능한 지역은 평택입니다. 평택 8경 도안을 기준으로 사진 십자수를 채웁니다.</span></div>
-              <p class="region-copy">다른 지역은 준비 중 상태로 잠겨 있습니다. 지역 데이터와 도안이 추가되면 같은 지도에서 선택 가능하게 확장됩니다.</p>
-              <div class="region-list" aria-label="지역 목록">
-                <button class="is-active" type="button" aria-pressed="true" data-region="pyeongtaek">평택</button>
-                <button type="button" disabled>서울 준비중</button>
-                <button type="button" disabled>부산 준비중</button>
-                <button type="button" disabled>강원 준비중</button>
-                <button type="button" disabled>전주 준비중</button>
-                <button type="button" disabled>제주 준비중</button>
-              </div>
-            </div>
-          </div>
-        </section>
+    <section id="reviews" class="section"><div class="section-inner"><div class="section-heading"><p class="eyebrow">05. 참가자 후기</p><h2>동네이웃의 기록</h2></div><div id="review-wall" class="reviews-grid"></div><div class="review-form-wrap"><form id="review-form" class="paper-form"><div class="form-row"><label>이름<input name="name" required placeholder="별명도 좋아요"></label><label>참여 회차<input name="session" placeholder="예: 1회차"></label></div><label>남기고 싶은 후기<textarea name="message" rows="4" required placeholder="오늘 채집한 장면과 마음을 남겨주세요"></textarea></label><label class="check-line"><input type="checkbox" name="public" checked><span>홈페이지 후기장에 공개해도 좋아요.</span></label><button class="crayon-button primary" type="submit">후기 붙이기</button><p id="review-message" class="message" role="status"></p></form></div></div></section>
 
-        <section class="pattern-section" aria-labelledby="patternTitle">
-          <div class="section-heading"><div><p class="eyebrow">Pattern sheet</p><h2 id="patternTitle">평택 8경 도안</h2></div><div class="count-stack"><span class="count-badge">도안 <b id="doneCount">1</b>/8</span><span class="count-badge">작업 <b id="stitchCount">0</b>/<span id="totalStitchCount">0</span></span></div></div>
-          <p class="pattern-lead">평택 8경 도안을 미니 프리뷰로 고른 뒤, 원하는 칸을 눌러 현장에서 찍은 사진을 한 장씩 채웁니다.</p>
-          <div class="pattern-picker" id="patternPicker" aria-label="평택 8경 도안 선택"></div>
-          <div class="pattern-wrap"><div class="sheet-toolbar"><button class="is-active" id="symbolModeButton" type="button">기호</button><button id="colorModeButton" type="button">색상</button><button id="photoModeButton" type="button">사진</button></div><div class="stitch-grid" id="stitchGrid" aria-label="평택 8경 십자수 도안"></div></div>
-        </section>
+    <section id="hosts" class="section"><div class="section-inner"><div class="section-heading"><p class="eyebrow">06. 진행자 소개</p><h2>함께 걷는 사람들</h2></div><div class="hosts-grid"><article class="host-card"><h3>동네를 묻는 사람</h3><p>장소의 이름보다 그곳을 기억하는 방식을 더 오래 듣습니다.</p></article><article class="host-card"><h3>기록을 모으는 사람</h3><p>흩어진 말과 장면을 채집장에 남길 수 있게 돕습니다.</p></article><article class="host-card"><h3>이웃을 잇는 사람</h3><p>처음 만난 취향이 서로의 동네가 되도록 자리를 만듭니다.</p></article></div></div></section>
 
-        <section class="legend-section" aria-labelledby="legendTitle"><div class="section-heading"><div><p class="eyebrow">Thread table</p><h2 id="legendTitle">색상표</h2></div></div><div class="legend-table" id="legendTable"></div></section>
-        <section class="spot-section" aria-labelledby="spotTitle"><div class="section-heading"><div><p class="eyebrow">Travel points</p><h2 id="spotTitle">평택 8경 촬영 포인트</h2></div></div><div class="spot-list" id="spotList"></div></section>
-      </main>
+    <section id="operator" class="section"><div class="section-inner"><div class="section-heading"><p class="eyebrow">07. 운영자</p><h2>비공개 채집장</h2></div><form id="operator-login" class="paper-form operator-lock"><label>운영자 암호<input type="password" name="password" placeholder="암호"></label><button class="crayon-button ghost" type="submit">들어가기</button><p id="operator-message" class="message"></p></form><div id="operator-panel" class="operator-panel hidden"><p id="sheet-status"></p><div class="tool-row"><button id="download-csv" class="mini" type="button">신청 CSV</button><button id="download-reviews-csv" class="mini" type="button">후기 CSV</button><button id="sheet-reservations-csv" class="mini" type="button">시트 신청 CSV</button><button id="sheet-reviews-csv" class="mini" type="button">시트 후기 CSV</button><button id="clear-reservations" class="mini" type="button">로컬 기록 비우기</button></div><div class="operator-grid"><div><h3>신청</h3><div class="table-wrap"><table><tbody id="reservation-table"></tbody></table></div></div><div><h3>후기</h3><div class="table-wrap"><table><tbody id="review-table"></tbody></table></div></div></div></div></div></section>
+  </main>
 
-      <footer class="bottom-nav" aria-label="앱 메뉴"><a href="#regionTitle">지역</a><a href="#patternTitle">도안</a><a href="#legendTitle">표</a><a href="#spotTitle">8경</a><button id="navInstallButton" type="button">담기</button><button id="shareButton" type="button">공유</button><button id="downloadButton" type="button">저장</button></footer>
-    </div>
+  <footer class="site-footer"><strong><img src="assets/logo-chaezip-20260624-nukki.png" alt="">평택채집</strong><p>어린 시절 여름방학처럼, 동네에서 소중한 무언가를 찾아오는 시간.</p></footer>
 
-    <input id="photoInput" class="visually-hidden" type="file" accept="image/*" capture="environment">
-    <dialog id="spotDialog"><form method="dialog"><button class="dialog-close" value="close" aria-label="닫기">×</button></form><div class="dialog-photo" id="dialogPhoto"></div><p class="eyebrow" id="dialogIndex"></p><h3 id="dialogTitle"></h3><p id="dialogDescription"></p><p class="dialog-location" id="dialogLocation">사진을 찍으면 허용된 경우 실제 촬영 위치가 함께 기록됩니다.</p><div class="dialog-actions"><button id="cameraButton" type="button">사진 찍기</button><button id="markCellButton" type="button">작업 완료</button><button id="clearSpotButton" type="button">사진 비우기</button></div></dialog>
-
-    <canvas id="colorCanvas" width="32" height="32" aria-hidden="true"></canvas>
-    <script>
-      (() => {
-        const intro = document.querySelector('#launchIntro');
-        const startButton = document.querySelector('#launchStartButton');
-        const hideIntro = () => intro?.classList.add('is-hidden');
-        startButton?.addEventListener('click', () => { hideIntro(); document.querySelector('#regionTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-        window.addEventListener('load', () => setTimeout(hideIntro, 1850));
-        document.querySelector('[data-region="pyeongtaek"]')?.addEventListener('click', () => document.querySelector('#patternTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-        document.querySelector('.map-dot.is-active')?.addEventListener('click', () => document.querySelector('#patternTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-        document.querySelector('#flowSaveButton')?.addEventListener('click', () => document.querySelector('#downloadButton')?.click());
-        document.querySelector('#flowShareButton')?.addEventListener('click', () => document.querySelector('#shareButton')?.click());
-
-        const nativeFetch = window.fetch.bind(window);
-        let countsCache = null;
-        let countsCacheAt = 0;
-        window.fetch = async (input, init = {}) => {
-          const method = (init.method || (typeof input === 'object' && input.method) || 'GET').toUpperCase();
-          const href = typeof input === 'string' ? input : input.url;
-          const path = new URL(href, location.href).pathname;
-          if (method === 'GET' && path === '/api/counts') {
-            if (countsCache && Date.now() - countsCacheAt < 8000) return new Response(JSON.stringify(countsCache), { status: 200, headers: { 'Content-Type': 'application/json' } });
-            const response = await nativeFetch(input, init);
-            countsCache = await response.clone().json();
-            countsCacheAt = Date.now();
-            return new Response(JSON.stringify(countsCache), { status: response.status, headers: { 'Content-Type': 'application/json' } });
-          }
-          if (method !== 'GET') countsCache = null;
-          return nativeFetch(input, init);
-        };
-
-        const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-        Object.defineProperty(Element.prototype, 'innerHTML', {
-          get() { return descriptor.get.call(this); },
-          set(value) {
-            if (this.id === 'legendTable' && typeof value === 'string' && value.length > 60000 && value.includes('legend-row')) {
-              const saved = value;
-              const done = document.querySelector('#stitchCount')?.textContent || '0';
-              descriptor.set.call(this, `<div class="legend-summary"><div><b>색상표 1024칸</b><span>${done}칸 작업 완료. 전체 표는 필요할 때만 불러옵니다.</span></div><button class="legend-open" type="button">전체 표 열기</button></div>`);
-              queueMicrotask(() => { const button = this.querySelector('.legend-open'); button?.addEventListener('click', () => { descriptor.set.call(this, saved); this.querySelectorAll('[data-key]').forEach(row => { row.addEventListener('click', () => window.openCell?.(row.dataset.key)); }); }); });
-              return;
-            }
-            descriptor.set.call(this, value);
-          }
-        });
-      })();
-    </script>
-    <script src="./app.js"></script>
-    <script>
-      (() => {
-        const photoInput = document.querySelector('#photoInput');
-        const originalPhotoChange = photoInput?.onchange;
-        let uploadBusy = false;
-        if (photoInput && originalPhotoChange) {
-          photoInput.onchange = async event => {
-            if (uploadBusy) return;
-            uploadBusy = true;
-            photoInput.disabled = true;
-            try {
-              await originalPhotoChange.call(photoInput, event);
-            } finally {
-              uploadBusy = false;
-              photoInput.disabled = false;
-              photoInput.value = '';
-            }
-          };
-        }
-      })();
-    </script>
-    <script>
-      (() => {
-        const installPanel = document.querySelector('#installPanel');
-        const installButton = document.querySelector('#installButton');
-        const navInstallButton = document.querySelector('#navInstallButton');
-        const installHint = document.querySelector('#installHint');
-        let deferredPrompt = null;
-        const standalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        const updateShellMode = () => document.documentElement.classList.toggle('is-standalone-shell', standalone());
-        const updateInstallUi = () => {
-          updateShellMode();
-          if (standalone()) {
-            installPanel?.classList.add('is-ready');
-            if (installHint) installHint.textContent = '홈 화면에서 바로 실행 중입니다.';
-            if (installButton) installButton.textContent = '준비 완료';
-            installButton?.setAttribute('disabled', 'disabled');
-            navInstallButton?.setAttribute('disabled', 'disabled');
-            return;
-          }
-          if (deferredPrompt) {
-            if (installHint) installHint.textContent = '버튼을 눌러 홈 화면에 담아두세요.';
-            installButton?.removeAttribute('disabled');
-            navInstallButton?.removeAttribute('disabled');
-          }
-        };
-        const showInstallHelp = () => alert('아이폰은 Safari 공유 버튼을 누른 뒤 “홈 화면에 추가”를 선택하세요. 안드로이드는 브라우저 메뉴 또는 이 버튼으로 홈 화면에 담을 수 있습니다.');
-        const promptInstall = async () => {
-          if (standalone()) return;
-          if (!deferredPrompt) return showInstallHelp();
-          deferredPrompt.prompt();
-          await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          updateInstallUi();
-        };
-        window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredPrompt = event; updateInstallUi(); });
-        window.addEventListener('appinstalled', () => { deferredPrompt = null; updateInstallUi(); });
-        window.matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallUi);
-        installButton?.addEventListener('click', promptInstall);
-        navInstallButton?.addEventListener('click', promptInstall);
-        if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
-        updateInstallUi();
-      })();
-    </script>
-  </body>
+  <script>
+    (()=>{
+      const cfg=window.PYEONGTAEK_CHAEZIP_CONFIG||{};
+      const endpoint=String(cfg.googleSheetWebAppUrl||"").trim();
+      const keys={r:"pyeongtaek-chaezip-reservations",v:"pyeongtaek-chaezip-reviews"};
+      const $=(s)=>document.querySelector(s);
+      const read=(k)=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return[]}};
+      const write=(k,d)=>localStorage.setItem(k,JSON.stringify(d));
+      const id=(p)=>p+"-"+new Date().toISOString().slice(0,10).replaceAll("-","")+"-"+Math.random().toString(36).slice(2,6).toUpperCase();
+      const esc=(v)=>String(v||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+      const fmt=(d)=>new Intl.DateTimeFormat("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).format(new Date(d));
+      const csvCell=(v)=>`"${String(v||"").replaceAll('"','""')}"`;
+      const download=(name,text)=>{const blob=new Blob(["\uFEFF"+text],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url)};
+      const toSheet=async(kind,payload)=>{if(!endpoint)return{skipped:true};const body=new URLSearchParams();body.set("kind",kind);body.set("payload",JSON.stringify(payload));try{await fetch(endpoint,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body});return{ok:true}}catch(e){return{ok:false}}};
+      const sheetCsv=(kind)=>{if(!endpoint)return"";const u=new URL(endpoint);u.searchParams.set("kind",kind);u.searchParams.set("format","csv");return u.toString()};
+      function renderReviews(){const items=read(keys.v);const wall=$("#review-wall");const empty=["첫 채집을 마친 이웃의 문장이 이곳에 붙습니다.","골목에서 발견한 장면과 마음이 남겨질 자리입니다.","서로의 취향을 나눈 뒤의 온도가 기록됩니다."];const cards=items.filter(x=>x.public).length?items.filter(x=>x.public).slice().reverse():empty.map((m,i)=>({message:m,name:"비워둔 후기장",session:"평택채집",createdAt:new Date().toISOString(),empty:i}));wall.innerHTML=cards.map(x=>`<article class="review-note"><p>${esc(x.message)}</p><small>${esc(x.session||"평택채집")}${x.empty!==undefined?"":" · "+esc(fmt(x.createdAt))}</small><span>${esc(x.name)}${x.empty!==undefined?"":" 이웃"}</span></article>`).join("");const table=$("#review-table");if(table)table.innerHTML=items.length?items.slice().reverse().map(x=>`<tr><td><strong>${esc(x.id)}</strong><br>${esc(fmt(x.createdAt))}</td><td>${esc(x.name)}</td><td>${esc(x.session||"-")}</td><td>${x.public?"공개":"비공개"}</td><td>${esc(x.message)}</td></tr>`).join(""):'<tr><td>아직 도착한 후기가 없습니다.</td></tr>'}
+      function renderReservations(){const items=read(keys.r);const table=$("#reservation-table");if(!table)return;table.innerHTML=items.length?items.slice().reverse().map(x=>`<tr><td><strong>${esc(x.id)}</strong><br>${esc(fmt(x.createdAt))}</td><td>${esc(x.name)}<br>${esc(x.email)}</td><td>${esc(x.phone)}</td><td>${esc(x.people)}명</td><td>${esc(x.session)}</td><td>${esc(x.wish||"-")}</td></tr>`).join(""):'<tr><td>아직 도착한 신청이 없습니다.</td></tr>'}
+      function reservationsCsv(){const items=read(keys.r);const rows=[["접수번호","접수일시","이름","연락처","이메일","인원","희망회차","채집하고싶은것"],...items.map(x=>[x.id,x.createdAt,x.name,x.phone,x.email,x.people,x.session,x.wish])];return rows.map(r=>r.map(csvCell).join(",")).join("\n")}
+      function reviewsCsv(){const items=read(keys.v);const rows=[["후기번호","접수일시","이름","참여회차","공개여부","후기"],...items.map(x=>[x.id,x.createdAt,x.name,x.session,x.public?"공개":"비공개",x.message])];return rows.map(r=>r.map(csvCell).join(",")).join("\n")}
+      $(".nav-toggle")?.addEventListener("click",e=>{const n=$("#site-nav");const open=!n.classList.contains("open");n.classList.toggle("open",open);e.currentTarget.setAttribute("aria-expanded",String(open))});
+      document.addEventListener("click",e=>{if(e.target.closest("#site-nav a"))$("#site-nav")?.classList.remove("open")});
+      $("#reservation-form")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const item={id:id("CHAEZIP"),createdAt:new Date().toISOString(),name:f.get("name"),phone:f.get("phone"),email:f.get("email"),people:f.get("people"),session:f.get("session"),wish:f.get("wish")};write(keys.r,[...read(keys.r),item]);renderReservations();const r=await toSheet("reservation",item);$("#reservation-message").textContent=r.skipped?"신청이 이 브라우저에 저장됐어요. Google Sheet URL을 연결하면 시트에도 모입니다.":"신청이 도착했어요. 곧 동네이웃으로 연락드릴게요.";e.currentTarget.reset()});
+      $("#review-form")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const item={id:id("REVIEW"),createdAt:new Date().toISOString(),name:f.get("name"),session:f.get("session"),message:f.get("message"),public:Boolean(f.get("public"))};write(keys.v,[...read(keys.v),item]);renderReviews();const r=await toSheet("review",item);$("#review-message").textContent=r.skipped?"후기가 이 브라우저에 붙었어요. Google Sheet URL을 연결하면 시트에도 모입니다.":"후기가 채집장에 붙었어요.";e.currentTarget.reset()});
+      $("#operator-login")?.addEventListener("submit",e=>{e.preventDefault();if(new FormData(e.currentTarget).get("password")!=="chaezip"){$("#operator-message").textContent="암호가 달라요.";return}$("#operator-panel").classList.remove("hidden");$("#operator-message").textContent="운영자 채집장을 열었어요.";$("#sheet-status").textContent=endpoint?"Google Sheet 연결 준비 완료":"config.js에 Apps Script 웹앱 URL을 넣으면 Google Sheet CSV 버튼이 켜집니다.";renderReservations();renderReviews()});
+      $("#download-csv")?.addEventListener("click",()=>download("pyeongtaek-chaezip-reservations.csv",reservationsCsv()));
+      $("#download-reviews-csv")?.addEventListener("click",()=>download("pyeongtaek-chaezip-reviews.csv",reviewsCsv()));
+      $("#sheet-reservations-csv")?.addEventListener("click",()=>sheetCsv("reservation")?open(sheetCsv("reservation"),"_blank","noopener"):alert("먼저 config.js에 Google Sheet 웹앱 URL을 넣어주세요."));
+      $("#sheet-reviews-csv")?.addEventListener("click",()=>sheetCsv("review")?open(sheetCsv("review"),"_blank","noopener"):alert("먼저 config.js에 Google Sheet 웹앱 URL을 넣어주세요."));
+      $("#clear-reservations")?.addEventListener("click",()=>{if(confirm("이 브라우저에 저장된 신청과 후기를 비울까요?")){write(keys.r,[]);write(keys.v,[]);renderReservations();renderReviews()}});
+      if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
+      renderReviews();
+    })();
+  </script>
+</body>
 </html>
