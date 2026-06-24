@@ -38,7 +38,8 @@ function doGet(event) {
 }
 
 function normalizeKind(kind) {
-  return kind === "review" ? "review" : "reservation";
+  const value = String(kind || "").toLowerCase();
+  return value === "review" || value === "reviews" ? "review" : "reservation";
 }
 
 function getSheet(kind) {
